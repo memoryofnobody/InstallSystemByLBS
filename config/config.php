@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 // 百度地图API密钥 (请替换为您自己的密钥)
-define('BAIDU_MAP_AK', 'zcd0Px8oGJcOuzTtGjIiOpKEGTeHf2nR');
+define('BAIDU_MAP_AK', '************');
 
 // 用户类型常量
 define('USER_TYPE_ADMIN', 'admin');
