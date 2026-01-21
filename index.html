@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单地图管理系统</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_BAIDU_MAP_AK_HERE"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>订单地图管理系统</h1>
+            <div class="user-info">
+                <span>欢迎, <strong id="userName"></strong> (<span id="userType"></span>)</span>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" data-tab="map-view">地图视图</button>
+                <button class="tab" data-tab="list-view">列表视图</button>
+                <button class="tab" data-tab="user-management" id="userManagementTab" style="display: none;">用户管理</button>
+            </div>
+
+            <!-- 地图视图 -->
+            <div id="map-view" class="tab-content active">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>单位名称</label>
+                        <input type="text" id="mapFilterCompany" placeholder="输入单位名称">
+                    </div>
+                    <div class="filter-group">
+                        <label>发货状态</label>
+                        <select id="mapFilterShipped">
+                            <option value="">全部</option>
+                            <option value="1">已发货</option>
+                            <option value="0">未发货</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>收货状态</label>
+                        <select id="mapFilterReceived">
+                            <option value="">全部</option>
+                            <option value="1">已收货</option>
+                            <option value="0">未收货</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-primary" onclick="loadMapData()">搜索</button>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-success" onclick="showCreateOrderModal()" id="createOrderBtn" style="display: none;">创建订单</button>
+                    </div>
+                </div>
+                <div id="map-container"></div>
+            </div>
+
+            <!-- 列表视图 -->
+            <div id="list-view" class="tab-content">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>单位名称</label>
+                        <input type="text" id="listFilterCompany" placeholder="输入单位名称">
+                    </div>
+                    <div class="filter-group">
+                        <label>发货状态</label>
+                        <select id="listFilterShipped">
+                            <option value="">全部</option>
+                            <option value="1">已发货</option>
+                            <option value="0">未发货</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>收货状态</label>
+                        <select id="listFilterReceived">
+                            <option value="">全部</option>
+                            <option value="1">已收货</option>
+                            <option value="0">未收货</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>安装状态</label>
+                        <select id="listFilterInstall">
+                            <option value="">全部</option>
+                            <option value="all_installed">全部安装</option>
+                            <option value="partial_installed">部分安装</option>
+                            <option value="not_installed">未安装</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-primary" onclick="loadOrderList()">搜索</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="orderTable">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>下单时间</th>
+                                <th>单位名称</th>
+                                <th>购买数量</th>
+                                <th>安装情况</th>
+                                <th>安装地址</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderTableBody">
+                            <tr><td colspan="8" class="loading">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div id="user-management" class="tab-content">
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="showCreateUserModal()">创建新用户</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>真实姓名</th>
+                                <th>用户类型</th>
+                                <th>电话</th>
+                                <th>公司</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr><td colspan="7" class="loading">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建订单模态框 -->
+    <div id="createOrderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>创建订单</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createOrderForm">
+                    <div class="form-group">
+                        <label>单位名称 *</label>
+                        <input type="text" name="company_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>购买数量 *</label>
+                        <input type="number" name="purchase_quantity" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>安装数量 *</label>
+                        <input type="number" name="install_quantity" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>安装地址 * (点击地图选择位置)</label>
+                        <input type="text" id="install_address" name="install_address" readonly required>
+                        <input type="hidden" id="install_latitude" name="install_latitude">
+                        <input type="hidden" id="install_longitude" name="install_longitude">
+                        <div id="order-map-container" style="height: 300px; margin-top: 10px; border-radius: 8px; overflow: hidden;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>下单人</label>
+                        <input type="text" name="order_contact">
+                    </div>
+                    <div class="form-group">
+                        <label>下单人联系方式</label>
+                        <input type="text" name="order_phone">
+                    </div>
+                    <div class="form-group">
+                        <label>收货人</label>
+                        <input type="text" name="receiver_name">
+                    </div>
+                    <div class="form-group">
+                        <label>收货地址</label>
+                        <input type="text" name="receiver_address">
+                    </div>
+                    <div class="form-group">
+                        <label>收货人联系方式</label>
+                        <input type="text" name="receiver_phone">
+                    </div>
+                    <div class="form-group">
+                        <label>安装对接联系人</label>
+                        <input type="text" name="install_contact">
+                    </div>
+                    <div class="form-group">
+                        <label>安装联系方式</label>
+                        <input type="text" name="install_phone">
+                    </div>
+                    <div class="form-array">
+                        <label style="font-weight: 600; margin-bottom: 10px; display: block;">安装需求清单</label>
+                        <div id="installRequirements"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addInstallRequirement()">添加</button>
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea name="remarks"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createOrderModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateOrder()">提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 订单详情模态框 -->
+    <div id="orderDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>订单详情</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="orderDetailContent">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('orderDetailModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建用户模态框 -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>创建新用户</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="form-group">
+                        <label>用户名 *</label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码 *</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>用户类型 *</label>
+                        <select name="user_type" required>
+                            <option value="">请选择</option>
+                            <option value="admin">管理员</option>
+                            <option value="buyer">买家</option>
+                            <option value="supplier">供应商</option>
+                            <option value="engineer">安装工程师</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>真实姓名</label>
+                        <input type="text" name="real_name">
+                    </div>
+                    <div class="form-group">
+                        <label>电话</label>
+                        <input type="text" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label>公司</label>
+                        <input type="text" name="company">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createUserModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateUser()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/map.js"></script>
+    <script src="/js/orders.js"></script>
+    <script src="/js/users.js"></script>
+</body>
+</html>

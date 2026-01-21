@@ -1,0 +1,23 @@
+# Apache配置文件
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # 如果请求的是真实文件或目录,不进行重写
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # API路由重写
+    RewriteRule ^api/(.*)$ api/$1.php [L,QSA]
+</IfModule>
+
+# 设置字符编码
+AddDefaultCharset UTF-8
+
+# PHP设置
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
